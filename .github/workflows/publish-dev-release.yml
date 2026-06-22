@@ -68,19 +68,71 @@ jobs:
       # -------------------------------
       # 4. Deploy to Github Pages
       # -------------------------------
+      - name: Restore other channel from cache
+        uses: actions/cache/restore@v4
+        with:
+          path: site/${{ steps.vars.outputs.non_target }}
+          key: pages-channel-${{ steps.vars.outputs.non_target }}-${{ github.repository }}
+          restore-keys: |
+            pages-channel-${{ steps.vars.outputs.non_target }}-${{ github.repository }}
+
       - name: Create Site Structure
         shell: bash
+        env:
+          NON_TARGET: ${{ steps.vars.outputs.non_target }}
+          TARGET: ${{ steps.vars.outputs.target }}
+          REPO_NAME: ${{ github.event.repository.name }}
+          REPO_OWNER: ${{ github.repository_owner }}
         run: |
-          # Create site directories.
+          set -euo pipefail
           mkdir -p site/dev site/hotfix
 
-          # Download files from non-target build.
-          URL="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/${{ steps.vars.outputs.non_target }}"
-          wget -O site/${{ steps.vars.outputs.non_target }}/deltagreen.zip "$URL"/deltagreen.zip
-          wget -O site/${{ steps.vars.outputs.non_target }}/system.json "$URL"/system.json
+          preserve_channel() {
+            local base="$1"
+            local dest="site/${NON_TARGET}"
+            curl -fsSL -o "${dest}/deltagreen.zip" "${base}/${NON_TARGET}/deltagreen.zip" &&
+              curl -fsSL -o "${dest}/system.json" "${base}/${NON_TARGET}/system.json"
+          }
 
-          # Copy files from current build.
-          cp system.json deltagreen.zip site/${{ steps.vars.outputs.target }}/
+          PAGES_BASES=(
+            "https://${REPO_OWNER}.github.io/${REPO_NAME}"
+          )
+          if [[ "${REPO_OWNER}" != "deltagreen-foundryvtt" ]]; then
+            PAGES_BASES+=("https://deltagreen-foundryvtt.github.io/${REPO_NAME}")
+          fi
+
+          preserved=false
+          for base in "${PAGES_BASES[@]}"; do
+            if preserve_channel "${base}"; then
+              echo "Preserved ${NON_TARGET} channel from ${base}"
+              preserved=true
+              break
+            fi
+          done
+
+          if [[ "${preserved}" != true ]]; then
+            if [[ -f "site/${NON_TARGET}/deltagreen.zip" && -f "site/${NON_TARGET}/system.json" ]]; then
+              echo "Using cached ${NON_TARGET} channel (Pages download unavailable)."
+            else
+              echo "::warning::Could not preserve ${NON_TARGET} channel (first deploy, cache miss, or Pages URL unavailable). Deploying ${TARGET} only until the other branch publishes."
+            fi
+          fi
+
+          cp system.json deltagreen.zip "site/${TARGET}/"
+
+      - name: Cache dev channel
+        if: success() && hashFiles('site/dev/deltagreen.zip') != ''
+        uses: actions/cache/save@v4
+        with:
+          path: site/dev
+          key: pages-channel-dev-${{ github.repository }}
+
+      - name: Cache hotfix channel
+        if: success() && hashFiles('site/hotfix/deltagreen.zip') != ''
+        uses: actions/cache/save@v4
+        with:
+          path: site/hotfix
+          key: pages-channel-hotfix-${{ github.repository }}
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
