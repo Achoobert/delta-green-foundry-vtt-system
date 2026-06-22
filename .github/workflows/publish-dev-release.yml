@@ -17,6 +17,9 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
       # -------------------------------
@@ -134,6 +137,20 @@ jobs:
           path: site/hotfix
           key: pages-channel-hotfix-${{ github.repository }}
 
+      - name: Ensure GitHub Pages is enabled
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh api "repos/${GITHUB_REPOSITORY}/pages" >/dev/null 2>&1; then
+            echo "GitHub Pages is configured."
+            exit 0
+          fi
+
+          echo "::error::GitHub Pages is not enabled for ${GITHUB_REPOSITORY}."
+          echo "One-time setup: Settings → Pages → Build and deployment → Source: GitHub Actions."
+          echo "https://github.com/${GITHUB_REPOSITORY}/settings/pages"
+          exit 1
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
@@ -143,4 +160,5 @@ jobs:
           path: site
 
       - name: Deploy
+        id: deployment
         uses: actions/deploy-pages@v4
