@@ -1,0 +1,62 @@
+# run the tests in foundry!
+name: CI
+
+on:
+  push:
+    branches:
+      - e2e-tests
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  actions: write
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    env:
+      FOUNDRY_WAIT_MS: '600000'
+      FOUNDRY_CACHE_VERSION: '14.364'
+      FOUNDRY_CORE_VERSION: '14.364'
+
+    steps:
+      - name: Checkout system repository
+        uses: actions/checkout@v6
+
+      - name: Checkout Quench tests
+        uses: actions/checkout@v6
+        with:
+          repository: Achoobert/deltagreen-system-tests
+          path: deltagreen-system-tests
+
+      - name: Install system dependencies
+        run: npm ci
+
+      - name: Install Quench test dependencies
+        working-directory: deltagreen-system-tests
+        run: npm ci
+
+      - name: Run Foundry E2E
+        uses: Achoobert/FoundryvttTestEnv@0.0.1
+        with:
+          foundry_version: '14.364'
+          foundry_world: deltagreen-test
+          test_system_manifest_url: local
+          test_module_ids: quench,deltagreen-system-tests
+          build_script: |
+            dest=foundrydata/Data/systems/deltagreen
+            npm run build:css
+            mkdir -p "$dest"
+            rsync -a \
+              --exclude '.git' --exclude 'node_modules' --exclude 'foundrydata' --exclude '.foundry-docker' --exclude 'scss' \
+              system.json LICENSE.txt module css lang templates packs assets \
+              "$dest/"
+          quench_tests_path: ./deltagreen-system-tests
+          quench_build_command: npm --prefix deltagreen-system-tests run build
+          cypress_install_command: npm --prefix deltagreen-system-tests exec cypress install
+          test_command: npm --prefix deltagreen-system-tests run tests:ci
+          foundry_username: ${{ secrets.FOUNDRY_USERNAME }}
+          foundry_password: ${{ secrets.FOUNDRY_PASSWORD }}
+          foundry_admin_key: ${{ secrets.FOUNDRY_ADMIN_KEY }}
