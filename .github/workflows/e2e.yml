@@ -1,3 +1,8 @@
+# Goal: 
+# - Maintain 1 test action runner that serves the modules and systems I use
+# - Cache foundry so they don't get charged for every test we run: only one pull per foundry version per repo.
+# - limit potential  exposure of credentials
+
 # run the tests in foundry!
 name: CI
 
@@ -41,12 +46,12 @@ jobs:
           if [ -f package-lock.json ]; then npm ci; else npm install; fi
 
       - name: Run Foundry E2E
-        uses: Achoobert/FoundryvttTestEnv@0.0.3
+        uses: Achoobert/FoundryvttTestEnv@0.0.4
         with:
           foundry_version: '14.364'
           foundry_world: deltagreen-test
           test_system_manifest_url: local
-          test_module_ids: quench,deltagreen-system-tests
+          test_module_ids: quench,deltagreen-system-tests # these will be enabled in the world, and installed if they aren't created by other build seteps
           build_script: |
             dest=foundrydata/Data/systems/deltagreen
             npm run build:css
@@ -57,8 +62,6 @@ jobs:
               "$dest/"
           quench_tests_path: ./deltagreen-system-tests
           quench_build_command: npm --prefix deltagreen-system-tests run build
-          cypress_install_command: npm --prefix deltagreen-system-tests exec cypress install
-          test_command: npm --prefix deltagreen-system-tests run tests:ci
           foundry_username: ${{ secrets.FOUNDRY_USERNAME }}
           foundry_password: ${{ secrets.FOUNDRY_PASSWORD }}
           foundry_admin_key: ${{ secrets.FOUNDRY_ADMIN_KEY }}
