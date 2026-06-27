@@ -1,9 +1,3 @@
-# Goal: 
-# - Maintain 1 test action runner that serves the modules and systems I use
-# - Cache foundry so they don't get charged for every test we run: only one pull per foundry version per repo.
-# - limit potential  exposure of credentials
-
-# run the tests in foundry!
 name: CI
 
 on:
