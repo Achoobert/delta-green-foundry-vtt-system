@@ -40,7 +40,7 @@ jobs:
           if [ -f package-lock.json ]; then npm ci; else npm install; fi
 
       - name: Run Foundry E2E
-        uses: Achoobert/FoundryvttTestEnv@0.0.5
+        uses: Achoobert/FoundryvttTestEnv@0.0.6
         with:
           foundry_version: '14.364'
           foundry_world: deltagreen-test
