@@ -49,9 +49,10 @@ jobs:
           build_script: |
             dest=foundrydata/Data/systems/deltagreen
             npm run build:css
+            bash build/build-packs.sh
             mkdir -p "$dest"
             rsync -a \
-              --exclude '.git' --exclude 'node_modules' --exclude 'foundrydata' --exclude '.foundry-docker' --exclude 'scss' \
+              --exclude '.git' --exclude 'node_modules' --exclude 'foundrydata' --exclude '.foundry-docker' --exclude 'scss' --exclude 'packs/source' \
               system.json LICENSE.txt module css lang templates packs assets \
               "$dest/"
           quench_tests_path: ./deltagreen-system-tests
