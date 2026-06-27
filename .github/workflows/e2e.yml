@@ -37,10 +37,11 @@ jobs:
       - name: Install Quench test dependencies
         working-directory: deltagreen-system-tests
         run: |
-          if [ -f package-lock.json ]; then npm ci; else npm install; fi
+          corepack enable
+          pnpm install --frozen-lockfile
 
       - name: Run Foundry E2E
-        uses: Achoobert/FoundryvttTestEnv@0.0.6
+        uses: Achoobert/FoundryvttTestEnv@0.0.11
         with:
           foundry_version: '14.364'
           foundry_world: deltagreen-test
@@ -56,7 +57,7 @@ jobs:
               system.json LICENSE.txt module css lang templates packs assets \
               "$dest/"
           quench_tests_path: ./deltagreen-system-tests
-          quench_build_command: npm --prefix deltagreen-system-tests run build
+          quench_build_command: pnpm -C deltagreen-system-tests run build
           foundry_username: ${{ secrets.FOUNDRY_USERNAME }}
           foundry_password: ${{ secrets.FOUNDRY_PASSWORD }}
           foundry_admin_key: ${{ secrets.FOUNDRY_ADMIN_KEY }}
