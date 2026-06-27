@@ -29,6 +29,7 @@ jobs:
         uses: actions/checkout@v6
         with:
           repository: Achoobert/deltagreen-system-tests
+          ref: develop
           path: deltagreen-system-tests
 
       - name: Install system dependencies
@@ -36,7 +37,8 @@ jobs:
 
       - name: Install Quench test dependencies
         working-directory: deltagreen-system-tests
-        run: npm ci
+        run: |
+          if [ -f package-lock.json ]; then npm ci; else npm install; fi
 
       - name: Run Foundry E2E
         uses: Achoobert/FoundryvttTestEnv@0.0.1
